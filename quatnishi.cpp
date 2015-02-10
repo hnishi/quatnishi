@@ -302,7 +302,7 @@ flag1000:
       tra1 = new tra_nishi( inp1.read("CODNAME").c_str() ,refpdbname );
       cout<<"TOTAL FRAME = "<<tra1->total_step<<endl;
 
-      vector<double> vec_tar;
+      vector<double> vec_tar, vec_tar2, vec_ref2;
       vector<double> rmsd_tra;
       vector<double> buf_x, buf_y, buf_z;
       for(unsigned int n=0;n<tra1->total_step;n++){
@@ -312,6 +312,7 @@ flag1000:
 	    buf_z.push_back( tra1->cordz[n*tra1->pdb1->total_atom+ii] );
 	 }
 flag300:
+         vec_tar2.clear(); vec_ref2.clear();
          for(int i=intra_start;i<=intra_end;i++){
             select_quat( *tra1->pdb1, buf_x, buf_y, buf_z, vec_tar, rmsdatom, i );
 	 }
