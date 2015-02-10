@@ -103,8 +103,8 @@ flag100:
          intra_start = 0;
 	 intra_end = intra_start2 - 1;
       }
-      //cout<<"!!! vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
-      //cout<<" vec_ref.size() = "<<vec_ref.size()<<endl;
+      cout<<"!!! vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
+      cout<<" vec_ref.size() = "<<vec_ref.size()<<endl;
 
       cout<<"Atoms in region between STARTRES and ENDRES = "<<intra_end - intra_start + 1<<endl;
       cout<<"Num. of atoms selected for rmsd calculation = "<<vec_ref.size()/3<<" in reference"<<endl;
@@ -168,6 +168,7 @@ flag200:
       
       cout<<"\n------ RMSD CALCULATION FOR PDB ------\n";
       string drmsdatom = inp1.read("DRMSDATOM") ;  
+      string dinversermsd = inp1.read("DINVERSERMSD") ;  
       char dstartchain = inp1.read("DSTARTCHAIN").c_str()[0];
       char dendchain = inp1.read("DENDCHAIN").c_str()[0];
       int dstartres = atoi(inp1.read("DSTARTRES").c_str());
@@ -198,15 +199,23 @@ flag200:
       cout<<"intra_start = "<<intra_start<<endl;
       cout<<"intra_end = "<<intra_end<<endl;
 
-      pdb_tmp->disp_line(intra_start-1);
-      pdb_tmp->disp_line(intra_start);
+      pdb_ref->disp_line(intra_start-1);
+      pdb_ref->disp_line(intra_start);
       cout<<"...\n";
-      pdb_tmp->disp_line(intra_end);
-      pdb_tmp->disp_line(intra_end+1);
+      pdb_ref->disp_line(intra_end);
+      pdb_ref->disp_line(intra_end+1);
+
+      intra_end2=intra_end; intra_start2=intra_start; flag=0;
+         if( dinversermsd == "YES" ){
+         intra_start = 0;
+         intra_end = intra_start2 - 1;
+	 flag = 999;
+      }
 
       rej_ca=0, rej_h=0, rej_wat=0, rej_cim=0, rej_cip=0, rej_mainchain=0;
       //int rtrn_sel;
       vec_ref.clear(); vec_tar.clear(); //vector<double> vec_ref;
+flag1000:
       for(int i=intra_start;i<=intra_end;i++){
          rtrn_sel = select_quat( *pdb_ref, vec_ref, drmsdatom, i );
          rtrn_sel = select_quat( *pdb_tar, vec_tar, drmsdatom, i );
@@ -220,6 +229,16 @@ flag200:
 	 case 6: rej_cip++; break;
 	 default: cout<<"Unknown value of rtrn_sel \n";
 	 }
+      }
+      if( dinversermsd == "YES" && flag == 999 ){
+         intra_start = intra_end2 + 1;
+	 intra_end = pdb_ref->total_atom - 1;
+	 flag = 1000;
+         goto flag1000;
+      }
+      if( flag == 1000 ){
+         intra_start = 0;
+	 intra_end = intra_start2 - 1;
       }
       cout<<"!!! vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
       cout<<" vec_ref.size() = "<<vec_ref.size()<<endl;
@@ -259,9 +278,11 @@ flag200:
 		exit(1);
       }
       //fprintf(fout,"REMARK  RMSD of all atoms in pdb (including water) = %f A\n",rmsdq);
-      fprintf(fout,"REMARK  RMSD of selected region = %f A, ATOM SELECTION = %s\n",rmsd_sel,rmsdatom.c_str());
-      fprintf(fout,"REMARK  <SUPERPOSITION> STARTCHAIN: %c, STARTRES: %i, ENDCHAIN: %c, ENDRES: %i, RMSDA\n",startchain,startres,endchain,endres);
-      fprintf(fout,"REMARK  <RMSD> DSTARTCHAIN: %c, DSTARTRES: %i, DENDCHAIN: %c, DENDRES: %i\n",dstartchain,dstartres,dendchain,dendres);
+      fprintf(fout,"REMARK  RMSD of selected region = %f %s\n",rmsd_sel,rmsdatom.c_str());
+      fprintf(fout,"REMARK  <SUPERPOSITION> range: chain %c/residue %i to chain %c/residue %i\n",startchain,startres,endchain,endres );
+      fprintf(fout,"REMARK  <SUPERPOSITION> selection: %s, inverse region: %s\n",rmsdatom.c_str(),inversermsd.c_str() ) ;
+      fprintf(fout,"REMARK  <RMSD> range: chain %c/residue %i to chain %c/ residue %i\n",dstartchain,dstartres,dendchain,dendres);
+      fprintf(fout,"REMARK  <RMSD> selection: %s, inverse region: %s\n",drmsdatom.c_str(), dinversermsd.c_str());
       fclose(fout); 
       pdb_tar->write_pdb(superpdb,'a');
       pdb_ref->write_pdb(superpdb,'a');
