@@ -1,5 +1,8 @@
-quatnishi 1.0.0
+quatnishi 1.0.1
 
+
+2015.02.10: 1.0.1
+  git test
 2015.02.05: 1.0.0
 
 ***  rmsd test  ***
