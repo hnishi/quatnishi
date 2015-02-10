@@ -103,8 +103,8 @@ flag100:
          intra_start = 0;
 	 intra_end = intra_start2 - 1;
       }
-      cout<<"!!! vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
-      cout<<" vec_ref.size() = "<<vec_ref.size()<<endl;
+      //cout<<"!!! vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
+      //cout<<" vec_ref.size() = "<<vec_ref.size()<<endl;
 
       cout<<"Atoms in region between STARTRES and ENDRES = "<<intra_end - intra_start + 1<<endl;
       cout<<"Num. of atoms selected for rmsd calculation = "<<vec_ref.size()/3<<" in reference"<<endl;
@@ -153,7 +153,7 @@ flag200:
       }
 
       cout<<"!!! vec_tar[0] = "<<vec_tar[0]<<", vec_tar[n] = "<<vec_tar[vec_tar.size() -1]<<endl;
-      cout<<"Num. of atoms selected for rmsd calculation = "<<vec_tar.size()/3<<" in target"<<endl;
+      cout<<"Num. of atoms selected for  superposition = "<<vec_tar.size()/3<<" in target"<<endl;
       if( vec_ref.size() != vec_tar.size() ){
          cerr<<"ERROR: num. of selected atoms is different of reference and target \n";
 	 cerr<<"reference atoms: "<<vec_ref.size()/3<<", target atoms: "<<vec_tar.size()/3<<endl;
@@ -188,6 +188,52 @@ flag200:
       rotate_quat( pdb_tar->coox, pdb_tar->cooy, pdb_tar->cooz, rot_mat );  // rotate target
       
       // RMSD calculation in the selected region
+      intra_start = pdb_ref->search_n( dstartchain, dstartres );
+      if( pdb_ref->rnum[pdb_ref->total_atom - 1] == dendres ){
+         intra_end = pdb_ref->total_atom -1;
+      }else{
+         intra_end = pdb_ref->search_n(dendchain,dendres + 1) -1;
+      }
+      cout<<"\nplease confirm the boader line of residue-range for superposition \n";
+      cout<<"intra_start = "<<intra_start<<endl;
+      cout<<"intra_end = "<<intra_end<<endl;
+
+      pdb_tmp->disp_line(intra_start-1);
+      pdb_tmp->disp_line(intra_start);
+      cout<<"...\n";
+      pdb_tmp->disp_line(intra_end);
+      pdb_tmp->disp_line(intra_end+1);
+
+      rej_ca=0, rej_h=0, rej_wat=0, rej_cim=0, rej_cip=0, rej_mainchain=0;
+      //int rtrn_sel;
+      vec_ref.clear(); vec_tar.clear(); //vector<double> vec_ref;
+      for(int i=intra_start;i<=intra_end;i++){
+         rtrn_sel = select_quat( *pdb_ref, vec_ref, drmsdatom, i );
+         rtrn_sel = select_quat( *pdb_tar, vec_tar, drmsdatom, i );
+	 switch( rtrn_sel ){
+	 case 0: break;
+	 case 1: rej_ca++; break;
+	 case 2: rej_mainchain++; break;
+	 case 3: rej_h++; break;
+	 case 4: rej_wat++; break;
+	 case 5: rej_cim++; break;
+	 case 6: rej_cip++; break;
+	 default: cout<<"Unknown value of rtrn_sel \n";
+	 }
+      }
+      cout<<"!!! vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
+      cout<<" vec_ref.size() = "<<vec_ref.size()<<endl;
+
+      cout<<"Atoms in region between DSTARTRES and DENDRES = "<<intra_end - intra_start + 1<<endl;
+      cout<<"Num. of atoms selected for rmsd calculation = "<<vec_ref.size()/3<<" in reference"<<endl;
+      cout<<"Rejected atoms are as follows (Selected: "<<drmsdatom<<")\n";
+      cout<<"!CA atoms = "<<rej_ca<<endl;
+      cout<<"!CA & !N & !C & !O atoms = "<<rej_mainchain<<endl;
+      cout<<"element H (Hydrogens) = "<<rej_h<<endl;
+      cout<<"residue name WAT (Water molecules) = "<<rej_wat<<endl;
+      cout<<"residue name CIM (minus ions) = "<<rej_cim<<endl;
+      cout<<"residue name CIP (plus ions) = "<<rej_cip<<endl;
+
       vector<double> ax,ay,az,bx,by,bz;  // formatting from 1D vector to 3D vector
       for(unsigned int i=0;i<vec_tar.size();i=i+3){ //for rmsd()
          ax.push_back( vec_tar[i] );
