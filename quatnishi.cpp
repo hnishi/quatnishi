@@ -22,6 +22,7 @@ int transfer_quat( vector<double> &x, vector<double> &y,  vector<double> &z, vec
 int rotate_quat( vector<double> &x, vector<double> &y,  vector<double> &z, vector<double> &rot_mat );
 int select_quat( pdb_nishi &pdb1, vector<double> &vec, string &rmsdatom, int i );
 int select_quat( pdb_nishi &pdb1, vector<double> &x, vector<double> &y,vector<double> &z, vector<double> &vec, string &rmsdatom, int i );
+int select_cod_rmsd( pdb_nishi pdb1, vector<double> &x, vector<double> &y,vector<double> &z, vector<double> &vec_tar2, vector<double> &vec_ref2,vector<double> &rot_mat, string &drmsdatom, string &dinversermsd ,int start, int end);
 
 /* ************************************* 
  *   quatnishi 
@@ -118,6 +119,14 @@ flag100:
 
    delete pdb_tmp;//free dynamic memory
 
+      // input RMSD selection
+      string drmsdatom = inp1.read("DRMSDATOM") ;  
+      string dinversermsd = inp1.read("DINVERSERMSD") ;  
+      char dstartchain = inp1.read("DSTARTCHAIN").c_str()[0];
+      char dendchain = inp1.read("DENDCHAIN").c_str()[0];
+      int dstartres = atoi(inp1.read("DSTARTRES").c_str());
+      int dendres = atoi(inp1.read("DENDRES").c_str());
+
    // **********************************************************************************
    // (3-1) superpose pdb to pdb and calculate RMSD
    // **********************************************************************************
@@ -167,12 +176,6 @@ flag200:
 
       
       cout<<"\n------ RMSD CALCULATION FOR PDB ------\n";
-      string drmsdatom = inp1.read("DRMSDATOM") ;  
-      string dinversermsd = inp1.read("DINVERSERMSD") ;  
-      char dstartchain = inp1.read("DSTARTCHAIN").c_str()[0];
-      char dendchain = inp1.read("DENDCHAIN").c_str()[0];
-      int dstartres = atoi(inp1.read("DSTARTRES").c_str());
-      int dendres = atoi(inp1.read("DENDRES").c_str());
       // transfer and rotate all atoms in target pdb and transfer all atoms in reference pdb
       vector<double> transf;  //get center of mass from rot_mat[12-14]
       transf.push_back( rot_mat[12] );
@@ -331,18 +334,21 @@ flag300:
 
          //cout<<"!!! vec_tar[0] = "<<vec_tar[0]<<", vec_tar[n] = "<<vec_tar[vec_tar.size() -1]<<endl;
          // 3-2-2  get rotation matrix and transform coordinates
-         quaternion( vec_ref, vec_tar );  // get rotation matrix
+         vector<double> rot_mat;
+         rot_mat = quaternion( vec_ref, vec_tar );  // get rotation matrix
          //cout<<"!!! after vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
          //cout<<"!!! after vec_tar[0] = "<<vec_tar[0]<<", vec_tar[n] = "<<vec_tar[vec_tar.size() -1]<<endl;
 
+         // RMSD SELECTION 
+         select_cod_rmsd( *tra1->pdb1, buf_x, buf_y, buf_z, vec_tar2, vec_ref2, rot_mat, drmsdatom, dinversermsd ,intra_start2,intra_end2);
          vector<double> ax,ay,az,bx,by,bz;  // format
-         for(unsigned int i=0;i<vec_tar.size();i=i+3){ //for rmsd()
-            ax.push_back( vec_tar[i] );
-            ay.push_back( vec_tar[1+i] );
-            az.push_back( vec_tar[2+i] );
-            bx.push_back( vec_ref[i] );
-            by.push_back( vec_ref[1+i] );
-            bz.push_back( vec_ref[2+i] );
+         for(unsigned int i=0;i<vec_tar2.size();i=i+3){ //for rmsd()
+            ax.push_back( vec_tar2[i] );
+            ay.push_back( vec_tar2[1+i] );
+            az.push_back( vec_tar2[2+i] );
+            bx.push_back( vec_ref2[i] );
+            by.push_back( vec_ref2[1+i] );
+            bz.push_back( vec_ref2[2+i] );
          }  
          rmsd_tra.push_back( rmsd(ax,ay,az,bx,by,bz) );
 	 buf_x.clear(); buf_y.clear(); buf_z.clear(); vec_tar.clear();
@@ -543,4 +549,59 @@ int select_quat( pdb_nishi &pdb1, vector<double> &x, vector<double> &y,vector<do
 }
 int select_quat( pdb_nishi &pdb1, vector<double> &vec, string &rmsdatom, int i ){
    return select_quat( pdb1, pdb1.coox, pdb1.cooy, pdb1.cooz, vec, rmsdatom, i );
+}
+
+//!!!FUNCTION: int select_cod_rmsd
+int select_cod_rmsd( pdb_nishi pdb1, vector<double> &x, vector<double> &y,vector<double> &z,vector<double> &vec_tar2, vector<double> &vec_ref2,vector<double> &rot_mat, string &drmsdatom , string &dinversermsd, int start,int end){
+   int flag=999, intra_start=0, intra_end=0;
+      // transfer and rotate all atoms in target pdb and transfer all atoms in reference pdb
+      vector<double> transf;  //get center of mass from rot_mat[12-14]
+      transf.push_back( rot_mat[12] );
+      transf.push_back( rot_mat[13] );
+      transf.push_back( rot_mat[14] );
+      transfer_quat( x, y, z, transf ); //transfer target
+
+      transf.clear();  //reference
+      transf.push_back( rot_mat[ 9] );
+      transf.push_back( rot_mat[10] );
+      transf.push_back( rot_mat[11] );
+      transfer_quat( pdb1.coox, pdb1.cooy, pdb1.cooz, transf ); //transfer reference
+
+      rotate_quat( x, y, z, rot_mat );  // rotate target
+      
+     cout<<"!!! end of rotate"<<endl;
+   if( dinversermsd == "YES" ){
+      intra_start = 0;
+      intra_end = start - 1;
+   }
+   int rtrn_sel;
+flag2000:
+   for(int i=intra_start;i<=intra_end;i++){
+      rtrn_sel = select_quat( pdb1, vec_ref2, drmsdatom, i );
+      rtrn_sel = select_quat( pdb1, x, y, z, vec_tar2, drmsdatom, i );
+      /*switch( rtrn_sel ){
+	 case 0: break;
+	 case 1: rej_ca++; break;
+	 case 2: rej_mainchain++; break;
+	 case 3: rej_h++; break;
+	 case 4: rej_wat++; break;
+	 case 5: rej_cim++; break;
+	 case 6: rej_cip++; break;
+	 default: cout<<"Unknown value of rtrn_sel \n";
+      }*/
+   }
+     cout<<"!!! end of select"<<endl;
+   
+      if( dinversermsd == "YES" && flag == 999 ){
+         intra_start = end + 1;
+	 intra_end = pdb1.total_atom - 1;
+	 flag = 2000;
+         goto flag2000;
+      }
+      if( flag == 2000 ){
+         intra_start = 0;
+	 intra_end = start - 1;
+      }
+     cout<<"!!! end of select_cod"<<endl;
+   return 0;
 }
