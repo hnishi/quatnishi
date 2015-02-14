@@ -7,6 +7,7 @@ int calc(Inp_nishi);  // calc() is empty func. (written in calc.cpp)
 int quatnishi(Inp_nishi);
 
 int main(int argc, char *argv[]){
+   cout<<"Version info. quatnishi v.1.1.0 \n";
 // ##################### ARGUMENT HANDLING ##########################
 // argv[1]: input parameter file
   if( argv[1]==NULL ){

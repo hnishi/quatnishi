@@ -315,7 +315,6 @@ flag1000:
 	    buf_z.push_back( tra1->cordz[n*tra1->pdb1->total_atom+ii] );
 	 }
 flag300:
-         vec_tar2.clear(); vec_ref2.clear();
          for(int i=intra_start;i<=intra_end;i++){
             select_quat( *tra1->pdb1, buf_x, buf_y, buf_z, vec_tar, rmsdatom, i );
 	 }
@@ -339,7 +338,14 @@ flag300:
          //cout<<"!!! after vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
          //cout<<"!!! after vec_tar[0] = "<<vec_tar[0]<<", vec_tar[n] = "<<vec_tar[vec_tar.size() -1]<<endl;
 
+      vector<double> transf;
+      transf.clear();  //reference
+      transf.push_back( rot_mat[ 9] );
+      transf.push_back( rot_mat[10] );
+      transf.push_back( rot_mat[11] );
+      transfer_quat( tra1->pdb1->coox, tra1->pdb1->cooy, tra1->pdb1->cooz, transf ); //transfer reference
          // RMSD SELECTION 
+         vec_tar2.clear(); vec_ref2.clear();
          select_cod_rmsd( *tra1->pdb1, buf_x, buf_y, buf_z, vec_tar2, vec_ref2, rot_mat, drmsdatom, dinversermsd ,intra_start2,intra_end2);
          vector<double> ax,ay,az,bx,by,bz;  // format
          for(unsigned int i=0;i<vec_tar2.size();i=i+3){ //for rmsd()
@@ -553,7 +559,7 @@ int select_quat( pdb_nishi &pdb1, vector<double> &vec, string &rmsdatom, int i )
 
 //!!!FUNCTION: int select_cod_rmsd
 int select_cod_rmsd( pdb_nishi pdb1, vector<double> &x, vector<double> &y,vector<double> &z,vector<double> &vec_tar2, vector<double> &vec_ref2,vector<double> &rot_mat, string &drmsdatom , string &dinversermsd, int start,int end){
-   int flag=999, intra_start=0, intra_end=0;
+   int flag=999, intra_start=start, intra_end=end;
       // transfer and rotate all atoms in target pdb and transfer all atoms in reference pdb
       vector<double> transf;  //get center of mass from rot_mat[12-14]
       transf.push_back( rot_mat[12] );
@@ -561,24 +567,23 @@ int select_cod_rmsd( pdb_nishi pdb1, vector<double> &x, vector<double> &y,vector
       transf.push_back( rot_mat[14] );
       transfer_quat( x, y, z, transf ); //transfer target
 
-      transf.clear();  //reference
-      transf.push_back( rot_mat[ 9] );
-      transf.push_back( rot_mat[10] );
-      transf.push_back( rot_mat[11] );
-      transfer_quat( pdb1.coox, pdb1.cooy, pdb1.cooz, transf ); //transfer reference
 
       rotate_quat( x, y, z, rot_mat );  // rotate target
       
-     cout<<"!!! end of rotate"<<endl;
+      //cout<<"!!! end of rotate"<<endl;
    if( dinversermsd == "YES" ){
       intra_start = 0;
       intra_end = start - 1;
    }
    int rtrn_sel;
+   //cout<<"intra_start and end = "<<start<<" "<<end<<endl;
+   //cout<<"pdb1.total_atom = "<<pdb1.total_atom<<endl;
+   //cout<<"drmsdatom = "<<drmsdatom<<endl;
 flag2000:
    for(int i=intra_start;i<=intra_end;i++){
       rtrn_sel = select_quat( pdb1, vec_ref2, drmsdatom, i );
       rtrn_sel = select_quat( pdb1, x, y, z, vec_tar2, drmsdatom, i );
+      //cout<<"i "<<i<<", rtrn_sel = "<<rtrn_sel<<endl;
       /*switch( rtrn_sel ){
 	 case 0: break;
 	 case 1: rej_ca++; break;
@@ -590,7 +595,7 @@ flag2000:
 	 default: cout<<"Unknown value of rtrn_sel \n";
       }*/
    }
-     cout<<"!!! end of select"<<endl;
+     //cout<<"!!! end of select"<<endl;
    
       if( dinversermsd == "YES" && flag == 999 ){
          intra_start = end + 1;
@@ -602,6 +607,7 @@ flag2000:
          intra_start = 0;
 	 intra_end = start - 1;
       }
-     cout<<"!!! end of select_cod"<<endl;
+     //cout<<"!!! end of select_cod"<<endl;
+   //cout<<"vec_tar2 size = "<<vec_tar2.size()<<", vec_ref2 size = "<<vec_ref2.size()<<endl;
    return 0;
 }

@@ -1,19 +1,19 @@
 # :::::::::   rmsd mode   ::::::::::::::::::::::::::::::::::::::::
-#RMSDMODE pdb # pdb  # pdb or cod
-RMSDMODE cod # pdb  # pdb or cod
+RMSDMODE pdb # pdb  # pdb or cod
+#RMSDMODE cod # pdb  # pdb or cod
 
 # :::::::::   common settings   ::::::::::::::::::::::::::::::::::
 # input 
-#REFPDBNAME ../samp/for_rmsd/pdbtopdb/crystal_1st_prot.pdb
-REFPDBNAME ../samp/for_rmsd/traj/crystal_1st.pdb
+REFPDBNAME ../samp/for_rmsd/pdbtopdb/crystal_1st_prot.pdb
+#REFPDBNAME ../samp/for_rmsd/traj/crystal_1st.pdb
 
 # superposition 
 RMSDATOM  ca   # mainchain  # all: all atoms in pdb, heavy: heavy atoms, ca: CA (atom name) atoms in mainchain, mainchain: CA, N, C and O atoms in mainchain 
 STARTCHAIN B  # space; white space " " can be set using keyword "space" 
-STARTRES 210  #1  # 210
+STARTRES 206  210  #1  # 210
 ENDCHAIN B  # space; white space " " can be set using keyword "space" 
-ENDRES 222  #234  # 222
-INVERSERMSD  YES  NO  # YES or NO
+ENDRES  226   222  #234  # 222
+INVERSERMSD  YES NO  # YES or NO
 
 # rmsd calculation
 DRMSDATOM ca
@@ -21,6 +21,7 @@ DSTARTCHAIN B  # space; white space " " can be set using keyword "space"
 DSTARTRES 210  #1  # 210
 DENDCHAIN B  # space; white space " " can be set using keyword "space" 
 DENDRES 222  #234  # 222
+DINVERSERMSD   NO  # YES or NO
 
 # :::::::::   pdb-mode   :::::::::::::::::::::::::::::::::::::::::
 # input 

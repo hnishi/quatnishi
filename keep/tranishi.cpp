@@ -105,6 +105,10 @@ int tra_nishi::write_step(const char* filename,int n){//output pdb at n step
                 printf("cannot open output file: %s\n",filename);
                 exit(1);
         }
+   if( (unsigned) n >= total_step ){ //added 2015.1.30
+      printf("cannot write_step because (step num.) %i >= (total_step) %i \n",n,total_step);
+      exit(1);
+   }
 
         //int bfanum,bfrnum;
         //float bfcoox,bfcooy,bfcooz,bfoccu,bftemf;

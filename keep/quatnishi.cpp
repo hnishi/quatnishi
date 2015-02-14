@@ -22,6 +22,7 @@ int transfer_quat( vector<double> &x, vector<double> &y,  vector<double> &z, vec
 int rotate_quat( vector<double> &x, vector<double> &y,  vector<double> &z, vector<double> &rot_mat );
 int select_quat( pdb_nishi &pdb1, vector<double> &vec, string &rmsdatom, int i );
 int select_quat( pdb_nishi &pdb1, vector<double> &x, vector<double> &y,vector<double> &z, vector<double> &vec, string &rmsdatom, int i );
+int select_cod_rmsd( pdb_nishi pdb1, vector<double> &x, vector<double> &y,vector<double> &z, vector<double> &vec_tar2, vector<double> &vec_ref2,vector<double> &rot_mat, string &drmsdatom, string &dinversermsd ,int start, int end);
 
 /* ************************************* 
  *   quatnishi 
@@ -32,8 +33,6 @@ int quatnishi( Inp_nishi inp1 ){
    // (1) input depending on RMSDMODE and RMSDATOM
    cout<<"\n------ MODE INPUT ------\n";
    string rmsdmode = inp1.read("RMSDMODE") ;  //char rmsdmode[5];
-   string rmsdatom = inp1.read("RMSDATOM") ;  
-   string inversermsd = inp1.read("INVERSERMSD") ;  
    
    // (2) read pdb and memorize the range of residues for rmsd calculation
    pdb_nishi* pdb_tmp;
@@ -44,7 +43,9 @@ int quatnishi( Inp_nishi inp1 ){
    cout<<"\n------ REFERENCE PDB INFORMATION ------\n";
    cout<<"Total_atom of pdb = "<<pdb_tmp->total_atom<<endl;
 
-   cout<<"\n------ RANGE AND ATOM SELECTION ------\n";
+   cout<<"\n------ SUPERPOSITION RANGE AND ATOM SELECTION ------\n";
+   string rmsdatom = inp1.read("RMSDATOM") ;  
+   string inversermsd = inp1.read("INVERSERMSD") ;  
    char startchain = inp1.read("STARTCHAIN").c_str()[0];
    char endchain = inp1.read("ENDCHAIN").c_str()[0];
    int startres = atoi(inp1.read("STARTRES").c_str());
@@ -103,6 +104,8 @@ flag100:
          intra_start = 0;
 	 intra_end = intra_start2 - 1;
       }
+      cout<<"!!! vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
+      cout<<" vec_ref.size() = "<<vec_ref.size()<<endl;
 
       cout<<"Atoms in region between STARTRES and ENDRES = "<<intra_end - intra_start + 1<<endl;
       cout<<"Num. of atoms selected for rmsd calculation = "<<vec_ref.size()/3<<" in reference"<<endl;
@@ -116,13 +119,21 @@ flag100:
 
    delete pdb_tmp;//free dynamic memory
 
+      // input RMSD selection
+      string drmsdatom = inp1.read("DRMSDATOM") ;  
+      string dinversermsd = inp1.read("DINVERSERMSD") ;  
+      char dstartchain = inp1.read("DSTARTCHAIN").c_str()[0];
+      char dendchain = inp1.read("DENDCHAIN").c_str()[0];
+      int dstartres = atoi(inp1.read("DSTARTRES").c_str());
+      int dendres = atoi(inp1.read("DENDRES").c_str());
+
    // **********************************************************************************
    // (3-1) superpose pdb to pdb and calculate RMSD
    // **********************************************************************************
    // 3-1-1 create vectors which include only atoms for rmsd calculation
    if( rmsdmode == "pdb" ){
-      cout<<"\n------ PDB ------\n";
-      cout<<"begin to calculate RMSD between pdb and pdb \n";
+      cout<<"\n------ MODE PDB ------\n";
+      cout<<"begin to  pdb and pdb \n";
       pdb_nishi* pdb_ref;
       pdb_ref = new pdb_nishi( refpdbname );
       pdb_nishi* pdb_tar;
@@ -150,7 +161,8 @@ flag200:
 	 intra_end = intra_start2 - 1;
       }
 
-      cout<<"Num. of atoms selected for rmsd calculation = "<<vec_tar.size()/3<<" in target"<<endl;
+      cout<<"!!! vec_tar[0] = "<<vec_tar[0]<<", vec_tar[n] = "<<vec_tar[vec_tar.size() -1]<<endl;
+      cout<<"Num. of atoms selected for  superposition = "<<vec_tar.size()/3<<" in target"<<endl;
       if( vec_ref.size() != vec_tar.size() ){
          cerr<<"ERROR: num. of selected atoms is different of reference and target \n";
 	 cerr<<"reference atoms: "<<vec_ref.size()/3<<", target atoms: "<<vec_tar.size()/3<<endl;
@@ -162,21 +174,89 @@ flag200:
       vector<double> rot_mat;
       rot_mat = quaternion( vec_ref, vec_tar );  // get rotation matrix
 
-      vector<double> transf;  // transfer target
+      
+      cout<<"\n------ RMSD CALCULATION FOR PDB ------\n";
+      // transfer and rotate all atoms in target pdb and transfer all atoms in reference pdb
+      vector<double> transf;  //get center of mass from rot_mat[12-14]
       transf.push_back( rot_mat[12] );
       transf.push_back( rot_mat[13] );
       transf.push_back( rot_mat[14] );
-      transfer_quat( pdb_tar->coox, pdb_tar->cooy, pdb_tar->cooz, transf );
+      transfer_quat( pdb_tar->coox, pdb_tar->cooy, pdb_tar->cooz, transf ); //transfer target
 
-      transf.clear();  // transfer reference
+      transf.clear();  //reference
       transf.push_back( rot_mat[ 9] );
       transf.push_back( rot_mat[10] );
       transf.push_back( rot_mat[11] );
-      transfer_quat( pdb_ref->coox, pdb_ref->cooy, pdb_ref->cooz, transf );
+      transfer_quat( pdb_ref->coox, pdb_ref->cooy, pdb_ref->cooz, transf ); //transfer reference
 
       rotate_quat( pdb_tar->coox, pdb_tar->cooy, pdb_tar->cooz, rot_mat );  // rotate target
-       
-      vector<double> ax,ay,az,bx,by,bz;  // format
+      
+      // RMSD calculation in the selected region
+      intra_start = pdb_ref->search_n( dstartchain, dstartres );
+      if( pdb_ref->rnum[pdb_ref->total_atom - 1] == dendres ){
+         intra_end = pdb_ref->total_atom -1;
+      }else{
+         intra_end = pdb_ref->search_n(dendchain,dendres + 1) -1;
+      }
+      cout<<"\nplease confirm the boader line of residue-range for superposition \n";
+      cout<<"intra_start = "<<intra_start<<endl;
+      cout<<"intra_end = "<<intra_end<<endl;
+
+      pdb_ref->disp_line(intra_start-1);
+      pdb_ref->disp_line(intra_start);
+      cout<<"...\n";
+      pdb_ref->disp_line(intra_end);
+      pdb_ref->disp_line(intra_end+1);
+
+      intra_end2=intra_end; intra_start2=intra_start; flag=0;
+         if( dinversermsd == "YES" ){
+         intra_start = 0;
+         intra_end = intra_start2 - 1;
+	 flag = 999;
+      }
+
+      rej_ca=0, rej_h=0, rej_wat=0, rej_cim=0, rej_cip=0, rej_mainchain=0;
+      //int rtrn_sel;
+      vec_ref.clear(); vec_tar.clear(); //vector<double> vec_ref;
+flag1000:
+      for(int i=intra_start;i<=intra_end;i++){
+         rtrn_sel = select_quat( *pdb_ref, vec_ref, drmsdatom, i );
+         rtrn_sel = select_quat( *pdb_tar, vec_tar, drmsdatom, i );
+	 switch( rtrn_sel ){
+	 case 0: break;
+	 case 1: rej_ca++; break;
+	 case 2: rej_mainchain++; break;
+	 case 3: rej_h++; break;
+	 case 4: rej_wat++; break;
+	 case 5: rej_cim++; break;
+	 case 6: rej_cip++; break;
+	 default: cout<<"Unknown value of rtrn_sel \n";
+	 }
+      }
+      if( dinversermsd == "YES" && flag == 999 ){
+         intra_start = intra_end2 + 1;
+	 intra_end = pdb_ref->total_atom - 1;
+	 flag = 1000;
+         goto flag1000;
+      }
+      if( flag == 1000 ){
+         intra_start = 0;
+	 intra_end = intra_start2 - 1;
+      }
+      cout<<"!!! vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
+      cout<<" vec_ref.size() = "<<vec_ref.size()<<endl;
+
+      cout<<"Atoms in region between DSTARTRES and DENDRES = "<<intra_end - intra_start + 1<<endl;
+      cout<<"Num. of atoms selected for rmsd calculation = "<<vec_ref.size()/3<<" in reference"<<endl;
+      cout<<"Rejected atoms are as follows (Selected: "<<drmsdatom<<")\n";
+      cout<<"!CA atoms = "<<rej_ca<<endl;
+      cout<<"!CA & !N & !C & !O atoms = "<<rej_mainchain<<endl;
+      cout<<"element H (Hydrogens) = "<<rej_h<<endl;
+      cout<<"residue name WAT (Water molecules) = "<<rej_wat<<endl;
+      cout<<"residue name CIM (minus ions) = "<<rej_cim<<endl;
+      cout<<"residue name CIP (plus ions) = "<<rej_cip<<endl;
+
+      vector<double> ax,ay,az,bx,by,bz;  // formatting from 1D vector to 3D vector
       for(unsigned int i=0;i<vec_tar.size();i=i+3){ //for rmsd()
          ax.push_back( vec_tar[i] );
          ay.push_back( vec_tar[1+i] );
@@ -185,13 +265,13 @@ flag200:
          by.push_back( vec_ref[1+i] );
          bz.push_back( vec_ref[2+i] );
      } 
-       	//FILE *fout2;  char filename2[] = "superpose.pdb";  if((fout2 = fopen(filename2,"w")) == NULL ){  printf("cannot open output file: %s\n",filename2);  exit(1); }  for(unsigned int n=0;n<ax.size();n++){  fprintf( fout2, "%4s%2s%5d%1s%-4s%8s%6s%8.3f%8.3f%8.3f%22s%-2s\n","ATOM"," ",n+1," ","O","MOL E 1"," ",ax[n],ay[n],az[n]," ","O" );  }  for(unsigned int n=0;n<ax.size();n++){  fprintf( fout2, "%4s%2s%5d%1s%-4s%8s%6s%8.3f%8.3f%8.3f%22s%-2s\n","ATOM"," ",n+1," ","C","MOL F 1"," ",bx[n],by[n],bz[n]," ","C" );   	}  fclose( fout2 );
+     //FILE *fout2;  char filename2[] = "superpose.pdb";  if((fout2 = fopen(filename2,"w")) == NULL ){  printf("cannot open output file: %s\n",filename2);  exit(1); }  for(unsigned int n=0;n<ax.size();n++){  fprintf( fout2, "%4s%2s%5d%1s%-4s%8s%6s%8.3f%8.3f%8.3f%22s%-2s\n","ATOM"," ",n+1," ","O","MOL E 1"," ",ax[n],ay[n],az[n]," ","O" );  }  for(unsigned int n=0;n<ax.size();n++){  fprintf( fout2, "%4s%2s%5d%1s%-4s%8s%6s%8.3f%8.3f%8.3f%22s%-2s\n","ATOM"," ",n+1," ","C","MOL F 1"," ",bx[n],by[n],bz[n]," ","C" );   	}  fclose( fout2 );
 
       // 3-1-3  output results
       double rmsdq = rmsd(pdb_tar->coox,pdb_tar->cooy,pdb_tar->cooz,pdb_ref->coox,pdb_ref->cooy,pdb_ref->cooz);
       cout<<"RMSD of all atoms in pdb (including water) = "<<rmsdq<<" A \n";
       double rmsd_sel = rmsd(ax,ay,az,bx,by,bz);
-      cout<<"RMSD of selected atoms = "<<rmsd_sel<<" A, selection = "<<rmsdatom<<endl;;
+      cout<<"RMSD of selected atoms = "<<rmsd_sel<<" A, selection = "<<rmsdatom<<endl;
 
       char superpdb[100];
       strcpy( superpdb, inp1.read("SUPERPDB").c_str() );
@@ -200,10 +280,13 @@ flag200:
 		printf("cannot open output file: %s\n",superpdb);
 		exit(1);
       }
-      fprintf(fout,"REMARK  RMSD of all atoms in pdb (including water) = %f A\n",rmsdq);
-      fprintf(fout,"REMARK  RMSD of selected region = %f A, ATOM SELECTION = %s\n",rmsd_sel,rmsdatom.c_str());
-      fprintf(fout,"REMARK  STARTCHAIN: %c, STARTRES: %i, ENDCHAIN: %c, ENDRES: %i\n",startchain,startres,endchain,endres);
-      fclose(fout);
+      //fprintf(fout,"REMARK  RMSD of all atoms in pdb (including water) = %f A\n",rmsdq);
+      fprintf(fout,"REMARK  RMSD of selected region = %f %s\n",rmsd_sel,rmsdatom.c_str());
+      fprintf(fout,"REMARK  <SUPERPOSITION> range: chain %c/residue %i to chain %c/residue %i\n",startchain,startres,endchain,endres );
+      fprintf(fout,"REMARK  <SUPERPOSITION> selection: %s, inverse region: %s\n",rmsdatom.c_str(),inversermsd.c_str() ) ;
+      fprintf(fout,"REMARK  <RMSD> range: chain %c/residue %i to chain %c/ residue %i\n",dstartchain,dstartres,dendchain,dendres);
+      fprintf(fout,"REMARK  <RMSD> selection: %s, inverse region: %s\n",drmsdatom.c_str(), dinversermsd.c_str());
+      fclose(fout); 
       pdb_tar->write_pdb(superpdb,'a');
       pdb_ref->write_pdb(superpdb,'a');
 
@@ -222,7 +305,7 @@ flag200:
       tra1 = new tra_nishi( inp1.read("CODNAME").c_str() ,refpdbname );
       cout<<"TOTAL FRAME = "<<tra1->total_step<<endl;
 
-      vector<double> vec_tar;
+      vector<double> vec_tar, vec_tar2, vec_ref2;
       vector<double> rmsd_tra;
       vector<double> buf_x, buf_y, buf_z;
       for(unsigned int n=0;n<tra1->total_step;n++){
@@ -248,16 +331,30 @@ flag300:
 	    flag = 100;  // 
          } 
 
+         //cout<<"!!! vec_tar[0] = "<<vec_tar[0]<<", vec_tar[n] = "<<vec_tar[vec_tar.size() -1]<<endl;
          // 3-2-2  get rotation matrix and transform coordinates
-         quaternion( vec_ref, vec_tar );  // get rotation matrix
+         vector<double> rot_mat;
+         rot_mat = quaternion( vec_ref, vec_tar );  // get rotation matrix
+         //cout<<"!!! after vec_ref[0] = "<<vec_ref[0]<<", vec_ref[n] = "<<vec_ref[vec_ref.size() -1]<<endl;
+         //cout<<"!!! after vec_tar[0] = "<<vec_tar[0]<<", vec_tar[n] = "<<vec_tar[vec_tar.size() -1]<<endl;
+
+      vector<double> transf;
+      transf.clear();  //reference
+      transf.push_back( rot_mat[ 9] );
+      transf.push_back( rot_mat[10] );
+      transf.push_back( rot_mat[11] );
+      transfer_quat( tra1->pdb1->coox, tra1->pdb1->cooy, tra1->pdb1->cooz, transf ); //transfer reference
+         // RMSD SELECTION 
+         vec_tar2.clear(); vec_ref2.clear();
+         select_cod_rmsd( *tra1->pdb1, buf_x, buf_y, buf_z, vec_tar2, vec_ref2, rot_mat, drmsdatom, dinversermsd ,intra_start2,intra_end2);
          vector<double> ax,ay,az,bx,by,bz;  // format
-         for(unsigned int i=0;i<vec_tar.size();i=i+3){ //for rmsd()
-            ax.push_back( vec_tar[i] );
-            ay.push_back( vec_tar[1+i] );
-            az.push_back( vec_tar[2+i] );
-            bx.push_back( vec_ref[i] );
-            by.push_back( vec_ref[1+i] );
-            bz.push_back( vec_ref[2+i] );
+         for(unsigned int i=0;i<vec_tar2.size();i=i+3){ //for rmsd()
+            ax.push_back( vec_tar2[i] );
+            ay.push_back( vec_tar2[1+i] );
+            az.push_back( vec_tar2[2+i] );
+            bx.push_back( vec_ref2[i] );
+            by.push_back( vec_ref2[1+i] );
+            bz.push_back( vec_ref2[2+i] );
          }  
          rmsd_tra.push_back( rmsd(ax,ay,az,bx,by,bz) );
 	 buf_x.clear(); buf_y.clear(); buf_z.clear(); vec_tar.clear();
@@ -458,4 +555,59 @@ int select_quat( pdb_nishi &pdb1, vector<double> &x, vector<double> &y,vector<do
 }
 int select_quat( pdb_nishi &pdb1, vector<double> &vec, string &rmsdatom, int i ){
    return select_quat( pdb1, pdb1.coox, pdb1.cooy, pdb1.cooz, vec, rmsdatom, i );
+}
+
+//!!!FUNCTION: int select_cod_rmsd
+int select_cod_rmsd( pdb_nishi pdb1, vector<double> &x, vector<double> &y,vector<double> &z,vector<double> &vec_tar2, vector<double> &vec_ref2,vector<double> &rot_mat, string &drmsdatom , string &dinversermsd, int start,int end){
+   int flag=999, intra_start=start, intra_end=end;
+      // transfer and rotate all atoms in target pdb and transfer all atoms in reference pdb
+      vector<double> transf;  //get center of mass from rot_mat[12-14]
+      transf.push_back( rot_mat[12] );
+      transf.push_back( rot_mat[13] );
+      transf.push_back( rot_mat[14] );
+      transfer_quat( x, y, z, transf ); //transfer target
+
+
+      rotate_quat( x, y, z, rot_mat );  // rotate target
+      
+      //cout<<"!!! end of rotate"<<endl;
+   if( dinversermsd == "YES" ){
+      intra_start = 0;
+      intra_end = start - 1;
+   }
+   int rtrn_sel;
+   //cout<<"intra_start and end = "<<start<<" "<<end<<endl;
+   //cout<<"pdb1.total_atom = "<<pdb1.total_atom<<endl;
+   //cout<<"drmsdatom = "<<drmsdatom<<endl;
+flag2000:
+   for(int i=intra_start;i<=intra_end;i++){
+      rtrn_sel = select_quat( pdb1, vec_ref2, drmsdatom, i );
+      rtrn_sel = select_quat( pdb1, x, y, z, vec_tar2, drmsdatom, i );
+      //cout<<"i "<<i<<", rtrn_sel = "<<rtrn_sel<<endl;
+      /*switch( rtrn_sel ){
+	 case 0: break;
+	 case 1: rej_ca++; break;
+	 case 2: rej_mainchain++; break;
+	 case 3: rej_h++; break;
+	 case 4: rej_wat++; break;
+	 case 5: rej_cim++; break;
+	 case 6: rej_cip++; break;
+	 default: cout<<"Unknown value of rtrn_sel \n";
+      }*/
+   }
+     //cout<<"!!! end of select"<<endl;
+   
+      if( dinversermsd == "YES" && flag == 999 ){
+         intra_start = end + 1;
+	 intra_end = pdb1.total_atom - 1;
+	 flag = 2000;
+         goto flag2000;
+      }
+      if( flag == 2000 ){
+         intra_start = 0;
+	 intra_end = start - 1;
+      }
+     //cout<<"!!! end of select_cod"<<endl;
+   //cout<<"vec_tar2 size = "<<vec_tar2.size()<<", vec_ref2 size = "<<vec_ref2.size()<<endl;
+   return 0;
 }

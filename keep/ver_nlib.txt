@@ -1,5 +1,15 @@
-nlib 1.0.3
+1.0.5
 
+
+2015.02.02: 1.0.5
+  nlib.h and pdbnishi.cpp
+  add option to pdb_nishi::write_pdb()
+  char mode (w or a)
+2015.01.30: 1.0.4
+  tranishi.cpp
+  in tra_nishi::write_step, add error handling n >= total_step
+  nlib.h
+  re-modify for rnum > 9999
 2015.01.13: 1.0.3
   nlib.h
   modify "#define WRITE_FORMAT ...." for rnum > 9999

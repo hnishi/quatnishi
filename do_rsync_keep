@@ -1,6 +1,7 @@
 #rsync -auv /Users/nishigami/Dropbox/baka/* /Users/nishigami/hnishi/baka/keep/ 
 #rsync -auv /Users/nishigami/hnishi/baka/ /Users/nishigami/Dropbox/baka/
 
+cp ver_quat.txt keep/
 cp inpnishi.cpp keep/
 cp inpnishi.h keep/
 cp quatnishi.cpp keep/
