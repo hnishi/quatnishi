@@ -1,6 +1,8 @@
-1.0.2
+1.1.0
 
 
+2015.02.12: 1.1.0
+  just increment the version 
 2015.02.10: 1.0.2
   in codmode, enables separation of calculation for superposition and rmsd
   and test this version with v1.0.0 -> correct

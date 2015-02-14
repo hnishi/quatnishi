@@ -12,5 +12,4 @@ cp nlib.h keep/
 cp math_nishi.h keep/
 cp main.cpp keep/
 cp Makefile keep/
-cp calc.cpp keep/
 cp ver_nlib.txt keep/

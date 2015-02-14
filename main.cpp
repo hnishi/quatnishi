@@ -3,7 +3,6 @@
 
 using namespace std;
 
-int calc(Inp_nishi);  // calc() is empty func. (written in calc.cpp)
 int quatnishi(Inp_nishi);
 
 int main(int argc, char *argv[]){
