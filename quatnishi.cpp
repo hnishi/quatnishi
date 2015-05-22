@@ -77,7 +77,7 @@ int quatnishi( Inp_nishi inp1 ){
    }
 
    // input ref_vec
-      int rej_ca=0, rej_h=0, rej_wat=0, rej_cim=0, rej_cip=0, rej_mainchain=0;
+      int rej_ca=0, rej_h=0, rej_wat=0, rej_cim=0, rej_cip=0, rej_mainchain=0, rej_carbonyl=0;
       int rtrn_sel;
       vector<double> vec_ref;
 flag100:
@@ -91,6 +91,7 @@ flag100:
 	 case 4: rej_wat++; break;
 	 case 5: rej_cim++; break;
 	 case 6: rej_cip++; break;
+	 case 7: rej_carbonyl++; break; 
 	 default: cout<<"Unknown value of rtrn_sel \n";
 	 }
       }
@@ -112,6 +113,7 @@ flag100:
       cout<<"Rejected atoms are as follows (Selected: "<<rmsdatom<<")\n";
       cout<<"!CA atoms = "<<rej_ca<<endl;
       cout<<"!CA & !N & !C & !O atoms = "<<rej_mainchain<<endl;
+      cout<<"!C & !O atoms = "<<rej_carbonyl<<endl;
       cout<<"element H (Hydrogens) = "<<rej_h<<endl;
       cout<<"residue name WAT (Water molecules) = "<<rej_wat<<endl;
       cout<<"residue name CIM (minus ions) = "<<rej_cim<<endl;
@@ -120,6 +122,7 @@ flag100:
    delete pdb_tmp;//free dynamic memory
 
       // input RMSD selection
+      cout<<"\n------ Setting of RMSD ------\n";
       string drmsdatom = inp1.read("DRMSDATOM") ;  
       string dinversermsd = inp1.read("DINVERSERMSD") ;  
       char dstartchain = inp1.read("DSTARTCHAIN").c_str()[0];
@@ -215,7 +218,7 @@ flag200:
 	 flag = 999;
       }
 
-      rej_ca=0, rej_h=0, rej_wat=0, rej_cim=0, rej_cip=0, rej_mainchain=0;
+      rej_ca=0, rej_h=0, rej_wat=0, rej_cim=0, rej_cip=0, rej_mainchain=0, rej_carbonyl=0;
       //int rtrn_sel;
       vec_ref.clear(); vec_tar.clear(); //vector<double> vec_ref;
 flag1000:
@@ -230,6 +233,7 @@ flag1000:
 	 case 4: rej_wat++; break;
 	 case 5: rej_cim++; break;
 	 case 6: rej_cip++; break;
+	 case 7: rej_carbonyl++; break; 
 	 default: cout<<"Unknown value of rtrn_sel \n";
 	 }
       }
@@ -251,6 +255,7 @@ flag1000:
       cout<<"Rejected atoms are as follows (Selected: "<<drmsdatom<<")\n";
       cout<<"!CA atoms = "<<rej_ca<<endl;
       cout<<"!CA & !N & !C & !O atoms = "<<rej_mainchain<<endl;
+      cout<<"!C & !O atoms = "<<rej_carbonyl<<endl;
       cout<<"element H (Hydrogens) = "<<rej_h<<endl;
       cout<<"residue name WAT (Water molecules) = "<<rej_wat<<endl;
       cout<<"residue name CIM (minus ions) = "<<rej_cim<<endl;
@@ -281,7 +286,7 @@ flag1000:
 		exit(1);
       }
       //fprintf(fout,"REMARK  RMSD of all atoms in pdb (including water) = %f A\n",rmsdq);
-      fprintf(fout,"REMARK  RMSD of selected region = %f %s\n",rmsd_sel,rmsdatom.c_str());
+      fprintf(fout,"REMARK  RMSD of selected region = %f A (%s)\n",rmsd_sel,drmsdatom.c_str());
       fprintf(fout,"REMARK  <SUPERPOSITION> range: chain %c/residue %i to chain %c/residue %i\n",startchain,startres,endchain,endres );
       fprintf(fout,"REMARK  <SUPERPOSITION> selection: %s, inverse region: %s\n",rmsdatom.c_str(),inversermsd.c_str() ) ;
       fprintf(fout,"REMARK  <RMSD> range: chain %c/residue %i to chain %c/ residue %i\n",dstartchain,dstartres,dendchain,dendres);
@@ -545,6 +550,7 @@ int select_quat( pdb_nishi &pdb1, vector<double> &x, vector<double> &y,vector<do
 	 if( pdb1.atmn[i] != "CA" && rmsdatom == "ca" )return 1;
 	 if( pdb1.atmn[i] != "CA" && pdb1.atmn[i] != "N" && pdb1.atmn[i] != "C" && pdb1.atmn[i] != "O" && rmsdatom == "mainchain" )return 2;
          if( pdb1.elem[i] == "H" && rmsdatom != "all" )return 3;
+         if( (pdb1.atmn[i] != "C" && pdb1.atmn[i] != "O") && rmsdatom == "carbonyl" )return 7;
          if( pdb1.resn[i] == "WAT" )return 4;
 	 if( pdb1.resn[i] == "CIM" )return 5;
 	 if( pdb1.resn[i] == "CIP" )return 6;
