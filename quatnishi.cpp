@@ -140,7 +140,9 @@ flag100:
       pdb_nishi* pdb_ref;
       pdb_ref = new pdb_nishi( refpdbname );
       pdb_nishi* pdb_tar;
-      pdb_tar = new pdb_nishi( inp1.read("PDBNAME").c_str() );
+      string pdbname = inp1.read("PDBNAME").c_str() ;
+      pdb_tar = new pdb_nishi( pdbname.c_str() );
+      //pdb_tar = new pdb_nishi( inp1.read("PDBNAME").c_str() );
       /*if( pdb_ref->total_atom != pdb_tar->total_atom ){
          cerr<<"ERROR: Total num.s of target pdb and reference pdb are different\n";
 	 cerr<<"exit this program by quatnishi(3-1-1) \n";
@@ -286,6 +288,8 @@ flag1000:
 		exit(1);
       }
       //fprintf(fout,"REMARK  RMSD of all atoms in pdb (including water) = %f A\n",rmsdq);
+      fprintf(fout,"REMARK  <REFERENCE> %s\n",refpdbname);
+      fprintf(fout,"REMARK  <TARGET> %s\n",pdbname.c_str());
       fprintf(fout,"REMARK  RMSD of selected region = %f A (%s)\n",rmsd_sel,drmsdatom.c_str());
       fprintf(fout,"REMARK  <SUPERPOSITION> range: chain %c/residue %i to chain %c/residue %i\n",startchain,startres,endchain,endres );
       fprintf(fout,"REMARK  <SUPERPOSITION> selection: %s, inverse region: %s\n",rmsdatom.c_str(),inversermsd.c_str() ) ;
