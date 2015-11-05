@@ -15,17 +15,33 @@ void tra_nishi::constructor( const char *codname, const char *pdbname, int n, st
 
 	pdb1=new pdb_nishi(pdbname);//call class pdb_nishi from nlib.h
 	//cout<<"TOTAL NUM. OF ATOMS = "<<pdb1.anum.size()<<endl;
-	//cout<<"TOTAL NUM. OF ATOMS = "<<pdb1.total_atom<<endl;
+	cout<<"TOTAL NUM. OF ATOMS = "<<pdb1->total_atom<<endl;
 	while(!ifs.eof()){// to read binary
-                ifs.ignore(4);
+                //ifs.ignore(4);
                 ifs.read( (char *) &bufint, sizeof( int ) );
                 loopnum.push_back (bufint);
-                ifs.read( (char *) &buffloat, 4 );
+                //cout<<bufint<<endl;
+                ifs.read( (char *) &buffloat, sizeof( float ) );
+                //cout<<buffloat<<endl;
+                ifs.read( (char *) &buffloat, sizeof( float ) );
+                ifs.read( (char *) &buffloat, sizeof( float ) );
+                ifs.read( (char *) &buffloat, sizeof( float ) );
+                ifs.read( (char *) &buffloat, sizeof( float ) );
+                //cout<<buffloat<<endl;
+                ifs.read( (char *) &buffloat, sizeof( float ) );
+                ifs.read( (char *) &buffloat, sizeof( float ) );
+                ifs.read( (char *) &buffloat, sizeof( float ) );
+                ifs.read( (char *) &buffloat, sizeof( float ) );
+                //cout<<buffloat<<endl;
+                /*ifs.read( (char *) &buffloat, 4 );
                 sitime.push_back (buffloat);
+                cout<<buffloat<<endl;
                 ifs.read( (char *) &buffloat, 4 );
                 cputime.push_back (buffloat);
+                cout<<buffloat<<endl;
                 ifs.read( (char *) &buffloat, 4 );
                 totalE.push_back (buffloat);
+                cout<<buffloat<<endl;
                 ifs.read( (char *) &buffloat, 4 );
                 kineticE.push_back (buffloat);
                 ifs.read( (char *) &buffloat, 4 );
@@ -40,7 +56,7 @@ void tra_nishi::constructor( const char *codname, const char *pdbname, int n, st
                 num15hyd.push_back (bufint);
                 ifs.read( (char *) &buffloat, 4 );
                 rmsd.push_back (buffloat);
-		ifs.ignore(8);
+		ifs.ignore(8);*/
 
 		double minx=99999,maxx=-99999,miny=99999,maxy=-99999,minz=99999,maxz=-99999;
 		float bufx, bufy, bufz;   int rtrn, rtrn_c=0;   vector<double> vec;
@@ -65,21 +81,21 @@ void tra_nishi::constructor( const char *codname, const char *pdbname, int n, st
 		length_y.push_back(maxy - miny);
 		length_z.push_back(maxz - minz);
 
-                ifs.ignore(4);  // totally 4*11+4*4+4*3*total_atom=60+12*total_atom
+                //ifs.ignore(4);  // totally 4*11+4*4+4*3*total_atom=60+12*total_atom
                 ifs.ignore(((60+12*pdb1->total_atom)*(n-1)));   //ignore for stride
         	
                 for(unsigned int w=0; w < vec.size(); w=w+3){
 			//cout<<"!!! vec = "<<vec[w]<<endl;
-			cordx.push_back( vec[w] );
-			cordy.push_back( vec[w+1] );
-			cordz.push_back( vec[w+2] );
+			cordx.push_back( vec[w] *10 );
+			cordy.push_back( vec[w+1] *10 );
+			cordz.push_back( vec[w+2] *10 );
 		}
 		total_sel = vec.size() /3 ;
 		//cout<<"!!!! rtrn_c = "<<rtrn_c<<endl;
         }
 	//cout<<"!!!! total_sel = "<<total_sel<<endl;
         //total_step = loopnum.size();
-        total_step = rmsd.size();
+        total_step = loopnum.size();
         int loopdist=loopnum[1]-loopnum[0];
         //cout<<"loopdist= "<<loopdist<<endl;
         while( loopnum[total_step-1] != ( loopnum[total_step-2] + loopdist ) ){
@@ -399,7 +415,7 @@ int select_atom( pdb_nishi &pdb1, double x, double y, double z, vector<double> &
 	 if( pdb1.atmn[i] != "CA" && atomsel == "ca" )return 1;
 	 if( pdb1.atmn[i] != "CA" && pdb1.atmn[i] != "N" && pdb1.atmn[i] != "C" && pdb1.atmn[i] != "O" && atomsel == "mainchain" )return 2;
          if( pdb1.elem[i] == "H" && atomsel == "heavy" )return 3;
-         if( pdb1.resn[i] == "WAT" && atomsel != "all" )return 4;
+         if( (pdb1.resn[i] == "WAT" || pdb1.resn[i] == "SOL") && atomsel != "all" )return 4;
 	 if( pdb1.resn[i] == "CIM" && atomsel != "all" )return 5;
 	 if( pdb1.resn[i] == "CIP" && atomsel != "all" )return 6;
          vec.push_back(x);

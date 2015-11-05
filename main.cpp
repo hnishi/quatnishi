@@ -6,7 +6,9 @@ using namespace std;
 int quatnishi(Inp_nishi);
 
 int main(int argc, char *argv[]){
-   cout<<"Version info. quatnishi v1.2.2 \n";
+   cout<<"Version info. quatnishi v1.3.0 \n";
+//trr_
+
 // ##################### ARGUMENT HANDLING ##########################
 // argv[1]: input parameter file
   if( argv[1]==NULL ){

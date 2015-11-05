@@ -43,6 +43,7 @@ public:
         vector<string> reco,atmn,resn,chai,elem; // pdb elements
 	vector<int> resi_mark; // final internal num. of the residue
 
+
 	unsigned int total_atom;//anum.size()
 	unsigned int total_residue;//resi_mark.size()
 
@@ -52,6 +53,7 @@ public:
 	int write_pdb(const char* filename, char mode); // put output filename with w or a option
 	int write_pdb(const char* filename); // put output filename
 	int search_n(char a,int aa); // return internal num. of chain ID "a" and residue num. "aa"; if return -1, then could not find it
+        int search_n_end(char a,int aa); // search the final internal num. of chain ID "a" and residue num. "aa"
 	int fix_step(const char *filename,float fxcell,float fycell,float fzcell);
 
 	//please use the following variables after function center_r()
@@ -85,12 +87,16 @@ public:
 	vector<int> loopnum,num15svw,num15hyd;
 	vector<double> sitime,cputime,totalE,kineticE,temp,potent,rmsf,rmsd;
 	vector<double> cordx,cordy,cordz,length_x,length_y,length_z;
-	unsigned int total_step;
+	unsigned int total_step, total_sel;
 	pdb_nishi* pdb1;
+	string atom_sel;
 
-	void constructor(const char *codname, const char *pdbname,int stride);
+	void constructor(const char *codname, const char *pdbname,int stride,string atomsel);
 	tra_nishi(const char *codname, const char *pdbname); // default constructer
 	tra_nishi(const char *codname, const char *pdbname,int stride); // constructer for input of cod file
+	tra_nishi(const char *codname, const char *pdbname,int stride,string atomsel); // constructer for input of cod file
+	tra_nishi(const char *codname, const char *pdbname,string atomsel); // constructer for input of cod file
+
 	int disp_line(int step); // display info. of step without coordinates
 	int write_cod(const char* filename, int stride);
 	int write_step(const char* filename, int n); // write pdb at n step
@@ -259,3 +265,33 @@ public:
         //~Cent_nishi();
 };
 #endif
+
+// #########################################################################
+//                         Inp_nishi
+// #########################################################################
+// inpnishi.cpp
+#ifndef _INCLUDE_INPUT_PARAMETERS_
+#define _INCLUDE_INPUT_PARAMETERS_
+class Inp_nishi{
+private:
+public:
+   string filename;
+
+   Inp_nishi( const char *inputname );
+      string read( string );
+   };
+#endif
+			    
+
+// #########################################################################
+//                select_atom
+// atomsel:
+//	all: all atoms
+//	protein: without resn WAT, CIP and CIM
+//	heavy: protein without hydrogens
+//	mainchain: only atom name CA, N, C and O
+//	ca: only atom name CA
+// #########################################################################
+// select_atom() in tranishi.cpp
+int select_atom( pdb_nishi &pdb1, vector<double> &vec, string &atomsel, int i );
+int select_atom( pdb_nishi &pdb1, double x, double y, double z, vector<double> &vec, string &atomsel, int i );
