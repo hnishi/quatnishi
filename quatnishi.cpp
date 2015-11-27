@@ -37,7 +37,7 @@ int quatnishi( Inp_nishi inp1 ){
    // (2) read pdb and memorize the range of residues for rmsd calculation
    pdb_nishi* pdb_tmp;
    //pdb_tmp = new pdb_nishi( inp1.read("REFPDBNAME").c_str() );
-   char refpdbname[100];  // = inp1.read("REFPDBNAME").c_str();
+   char refpdbname[1000];  // = inp1.read("REFPDBNAME").c_str();
    strcpy(refpdbname,inp1.read("REFPDBNAME").c_str() );
    pdb_tmp = new pdb_nishi( refpdbname );
    cout<<"\n------ REFERENCE PDB INFORMATION ------\n";
@@ -195,6 +195,7 @@ flag200:
       transfer_quat( pdb_ref->coox, pdb_ref->cooy, pdb_ref->cooz, transf ); //transfer reference
 
       rotate_quat( pdb_tar->coox, pdb_tar->cooy, pdb_tar->cooz, rot_mat );  // rotate target
+      //printf("debug: %10f %10f %10f\n",pdb_tar->coox[100], pdb_tar->cooy[100], pdb_tar->cooz[100]);//debug
       
       // RMSD calculation in the selected region
       intra_start = pdb_ref->search_n( dstartchain, dstartres );
@@ -224,6 +225,7 @@ flag200:
       //int rtrn_sel;
       vec_ref.clear(); vec_tar.clear(); //vector<double> vec_ref;
 flag1000:
+   cout<<"intra_start and end = "<<intra_start<<" "<<intra_end<<endl;
       for(int i=intra_start;i<=intra_end;i++){
          rtrn_sel = select_quat( *pdb_ref, vec_ref, drmsdatom, i );
          rtrn_sel = select_quat( *pdb_tar, vec_tar, drmsdatom, i );
@@ -313,6 +315,18 @@ flag1000:
       tra_nishi* tra1;
       tra1 = new tra_nishi( inp1.read("CODNAME").c_str() ,refpdbname );
       cout<<"TOTAL FRAME = "<<tra1->total_step<<endl;
+      
+      int startz = tra1->pdb1->search_n( dstartchain, dstartres );
+      int endz;
+      if( tra1->pdb1->rnum[tra1->pdb1->total_atom - 1] == dendres ){
+         endz = tra1->pdb1->total_atom -1;
+      }else{
+         endz = tra1->pdb1->search_n(dendchain,dendres + 1) -1;
+      }
+      cout<<"\nplease confirm the boader line of residue-range for superposition \n";
+      cout<<"startz = "<<startz<<endl;
+      cout<<"endz = "<<endz<<endl;
+
 
       vector<double> vec_tar, vec_tar2, vec_ref2;
       vector<double> rmsd_tra;
@@ -355,8 +369,9 @@ flag300:
       transfer_quat( tra1->pdb1->coox, tra1->pdb1->cooy, tra1->pdb1->cooz, transf ); //transfer reference
          // RMSD SELECTION 
          vec_tar2.clear(); vec_ref2.clear();
-         select_cod_rmsd( *tra1->pdb1, buf_x, buf_y, buf_z, vec_tar2, vec_ref2, rot_mat, drmsdatom, dinversermsd ,intra_start2,intra_end2);
+         select_cod_rmsd( *tra1->pdb1, buf_x, buf_y, buf_z, vec_tar2, vec_ref2, rot_mat, drmsdatom, dinversermsd ,startz,endz);
          vector<double> ax,ay,az,bx,by,bz;  // format
+         //cout<<"num of atoms for rmsd calc: "<<vec_tar2.size()/3<<endl;
          for(unsigned int i=0;i<vec_tar2.size();i=i+3){ //for rmsd()
             ax.push_back( vec_tar2[i] );
             ay.push_back( vec_tar2[1+i] );
@@ -513,9 +528,9 @@ vector<double> quaternion( vector<double> &vec_ref, vector<double> &vec_tar ){
 	}
 
 	/*puts("rotation matrix q");
-	for(int i=0;i<9;i=i+3){
+	for(int i=0;i<15;i=i+3){
 	   printf("%10f %10f %10f\n",rot_mat[i],rot_mat[i+1],rot_mat[i+2]);
-	}*/
+	} */
 
    double buf[3];
    for(unsigned int i=0;i<vec_tar.size();i=i+3){ // Rotate by R(q)*b
@@ -551,6 +566,7 @@ int rotate_quat( vector<double> &x, vector<double> &y,  vector<double> &z, vecto
       return 0;
 }
 int select_quat( pdb_nishi &pdb1, vector<double> &x, vector<double> &y,vector<double> &z, vector<double> &vec, string &rmsdatom, int i ){
+     //printf("debug: size pdb1 %10d vector %10d\n", pdb1.total_atom  );
 	 if( pdb1.atmn[i] != "CA" && rmsdatom == "ca" )return 1;
 	 if( pdb1.atmn[i] != "CA" && pdb1.atmn[i] != "N" && pdb1.atmn[i] != "C" && pdb1.atmn[i] != "O" && rmsdatom == "mainchain" )return 2;
          if( pdb1.elem[i] == "H" && rmsdatom != "all" )return 3;
@@ -579,6 +595,7 @@ int select_cod_rmsd( pdb_nishi pdb1, vector<double> &x, vector<double> &y,vector
 
 
       rotate_quat( x, y, z, rot_mat );  // rotate target
+      //printf("debug: %10f %10f %10f\n",x[100], y[100], z[100]);
       
       //cout<<"!!! end of rotate"<<endl;
    if( dinversermsd == "YES" ){
@@ -586,10 +603,10 @@ int select_cod_rmsd( pdb_nishi pdb1, vector<double> &x, vector<double> &y,vector
       intra_end = start - 1;
    }
    int rtrn_sel;
-   //cout<<"intra_start and end = "<<start<<" "<<end<<endl;
    //cout<<"pdb1.total_atom = "<<pdb1.total_atom<<endl;
    //cout<<"drmsdatom = "<<drmsdatom<<endl;
 flag2000:
+   //cout<<"intra_start and end = "<<intra_start<<" "<<intra_end<<endl;
    for(int i=intra_start;i<=intra_end;i++){
       rtrn_sel = select_quat( pdb1, vec_ref2, drmsdatom, i );
       rtrn_sel = select_quat( pdb1, x, y, z, vec_tar2, drmsdatom, i );

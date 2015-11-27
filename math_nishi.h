@@ -22,7 +22,8 @@ inline double rmsd(vector<double> &ax,vector<double> &ay,vector<double> &az,
 {
 	double rmsd,tot_x=0,tot_y=0,tot_z=0;
 	//double sum=0;
-	if(ax.size() != bx.size()){
+    //printf("debug: size %10d\n",ax.size() );
+	if(ax.size() != bx.size() || ax.size() != ay.size() || ay.size() != bz.size() ){
 		cerr<<"ERROR: both structures should have the same num. of atoms\n";
 		return -1;
 	}
