@@ -6,7 +6,7 @@ using namespace std;
 int quatnishi(Inp_nishi);
 
 int main(int argc, char *argv[]){
-   cout<<"Version info. quatnishi v1.4.0 \n";
+   cout<<"Version info. quatnishi v1.4.1 \n";
 //trr_
 
 // ##################### ARGUMENT HANDLING ##########################

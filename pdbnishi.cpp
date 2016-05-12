@@ -85,7 +85,7 @@ pdb_nishi::pdb_nishi(const char *pdbname){
 		//if(bfchai[0]=='\0') cout<<"NULL\n";
 		//else cout<<"bfchai= "<<bfchai<<"  ,endl\n";
 		//bfchai[1]=' ';
-		strncpy(buf2, &buf1[22], 4); buf2[4] = '\0';
+		strncpy(buf2, &buf1[22], 8); buf2[8] = '\0';
 		sscanf(buf2, "%d", &bfrnum);
 		//strncpy(atom->iCode, &textbuf[26], 1);
 		strncpy(buf2, &buf1[30], 8); buf2[8] = '\0';
@@ -303,6 +303,23 @@ int pdb_nishi::search_n(char a,int aa) // search internal num. of chain ID "a" a
 		}
         }
 	cout<<"ERROR: CHAIN ID "<<a<<" AND RESIDUE NUM. "<<aa<<" DOES NOT EXIST.\n";
+	return -1;
+}
+// #########################################################################
+//                           CLASS FUNCTION search_n_end
+// #########################################################################
+int pdb_nishi::search_n_end(char a,int aa) // search internal num. of chain ID "a" and residue num. "aa"
+{
+        for(unsigned int j=0;j<total_atom;j++){
+		if( chai[j].c_str()[0] == a )
+		{
+			if( rnum[j] == aa && rnum[j+1] != aa){
+				return j;
+			}
+		}
+        }
+	cout<<"WARNING: pdb_nishi::search_n_end( char CHAIN-ID, int RESIDUE-NUMBER ) \n";
+	cout<<"WARNING: CHAIN ID "<<a<<" AND RESIDUE NUM. "<<aa<<" DOES NOT EXIST.\n";
 	return -1;
 }
 

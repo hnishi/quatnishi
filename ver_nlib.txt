@@ -1,6 +1,22 @@
-1.0.5
+1.1.3
 
 
+2015.02.09: 1.1.3
+  add write_cod(filename)
+2015.02.09: 1.1.0
+  reading element 
+2015.02.09: 1.0.9
+  modify tra_nishi::write_step to write REMARK in output-pdb
+  add public variable (string cod_name, pdb_name) into class tra_nishi
+  change arugument from internal number to frame number of write_step()
+2015.02.07: 1.0.8
+  add member function search_n_end() in pdbnishi.cpp and nlib.h
+2015.02.06: 1.0.7
+  add function select_atom() into tranishi.cpp
+  and add option of atomsel into tra_nishi::constructor()
+  and modified write_step(), write_cod() and fix_cod() for atom_sel
+2015.02.06: 1.0.6
+  add new class, Inp_nishi in nlib.h and inpnishi.cpp
 2015.02.02: 1.0.5
   nlib.h and pdbnishi.cpp
   add option to pdb_nishi::write_pdb()
@@ -19,4 +35,4 @@
 2014.12.30: 1.0.1
   pdb_nishi::disp_line, error handling of invalid argument
 2014.12.30: 1.0.0
-  I started to write version of nlib.h.
+  I started to record the versions of nlib.h.

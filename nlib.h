@@ -15,8 +15,8 @@
 //	#endif
 
 //#define SCAN_FORMAT "%6s%5d%4s%4s%1s%4d%7f%7f%7f%5f%5f%s" // no missing
-#define WRITE_FORMAT_1 "%-6s%5d%5s %-4s%c %-5d%10.3f%8.3f%8.3f%6.2f%6.2f%12s\n"
-#define WRITE_FORMAT_2 "%-6s%5d  %-3s %-4s%c %-5d%10.3f%8.3f%8.3f%6.2f%6.2f%12s\n"
+#define WRITE_FORMAT_1 "%-6s%5d%5s %-4s%c %-7d%8.3f%8.3f%8.3f%6.2f%6.2f%12s\n"
+#define WRITE_FORMAT_2 "%-6s%5d  %-3s %-4s%c %-7d%8.3f%8.3f%8.3f%6.2f%6.2f%12s\n"
 //#define SCAN_FORMAT "%6s%5d%4s%4s%5d%7f%7f%7f%5f%5f" // missing chain element
 //#define WRITE_FORMAT_1 "%-6s%5d%5s %-4s%5d%12.3f%8.3f%8.3f%6.2f%6.2f\n"
 //#define WRITE_FORMAT_2 "%-6s%5d  %-3s %-4s%5d%12.3f%8.3f%8.3f%6.2f%6.2f\n"
@@ -43,12 +43,14 @@ public:
         vector<string> reco,atmn,resn,chai,elem; // pdb elements
 	vector<int> resi_mark; // final internal num. of the residue
 
+	string pdb_name;
 
 	unsigned int total_atom;//anum.size()
 	unsigned int total_residue;//resi_mark.size()
 
         pdb_nishi(); // constructer 1 for error
         pdb_nishi(const char *pdbname); // constructer for input of pdb
+        pdb_nishi(const char *pdbname,vector<int> num_pol); // constructer for input of pdb
         int disp_line(int n); // n is internal number
 	int write_pdb(const char* filename, char mode); // put output filename with w or a option
 	int write_pdb(const char* filename); // put output filename
@@ -87,9 +89,10 @@ public:
 	vector<int> loopnum,num15svw,num15hyd;
 	vector<double> sitime,cputime,totalE,kineticE,temp,potent,rmsf,rmsd;
 	vector<double> cordx,cordy,cordz,length_x,length_y,length_z;
-	unsigned int total_step, total_sel;
+	unsigned int total_step, total_sel; // total_* >= 1
 	pdb_nishi* pdb1;
 	string atom_sel;
+	string cod_name, pdb_name;
 
 	void constructor(const char *codname, const char *pdbname,int stride,string atomsel);
 	tra_nishi(const char *codname, const char *pdbname); // default constructer
@@ -99,6 +102,7 @@ public:
 
 	int disp_line(int step); // display info. of step without coordinates
 	int write_cod(const char* filename, int stride);
+	int write_cod(const char* filename);
 	int write_step(const char* filename, int n); // write pdb at n step
 	int fix_step(const char *filename, int n,float fxcell,float fycell,float fzcell);
 	int fix_cod(float fxcell,float fycell,float fzcell);
@@ -295,3 +299,6 @@ public:
 // select_atom() in tranishi.cpp
 int select_atom( pdb_nishi &pdb1, vector<double> &vec, string &atomsel, int i );
 int select_atom( pdb_nishi &pdb1, double x, double y, double z, vector<double> &vec, string &atomsel, int i );
+
+// search_sel in tranishi.cpp
+int search_sel( pdb_nishi &pdb1, string chai, int resn, string atmn, string atomsel);
